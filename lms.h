@@ -11,17 +11,14 @@ class lms
 
     }LandMark,*LM;
 public:
-    typedef  int (*FP)(LM a, LM b);  //定义类型
     lms();
     ~lms();
     void print();
-    void sift(LM*r,int length);//堆调整
-    void heapsort(LM*r,int length);//堆排序
+    void sift(LM*r,int length,int info);//堆调整:info是第几个判据
+    void heapsort(LM*r,int length,int info);//堆排序:info是第几个判据
     int length;
     LM* base;
-    int cmp1(LM p,LM q);//按照LinkId比较
-     int cmp2(LM p,LM q);//按照disclass比较
-     FP fp[2];
+    int cmp(LM p,LM q,int info);//按照LinkId比较
 };
 
 #endif // LMS_H
