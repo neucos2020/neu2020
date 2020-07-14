@@ -90,3 +90,47 @@ lms::~lms(){
     }
     free (this->base);
 }
+int lms:: cmp1(LM p,LM q){
+    if(p->LinkId>q->LinkId)return 1;
+    else if(p->LinkId==q->LinkId) return 0;
+    else return -1;
+}
+
+int lms:: cmp2(LM p,LM q){
+    if(p->LinkId>q->disclass)return 1;
+    else if(p->LinkId==q->disclass) return 0;
+    else return -1;
+}
+void  lms:: sift(LM*r,int length)//堆调整:化成大根堆
+{
+    int start=length/2;//开始调整的节点
+    int i,j;
+   LM temp;
+    for(i=start;i>=1;i--){
+    j=i;
+    while(2*j+1<=length){//左右子树都有
+    if(cmp1(r[2*j-1],r[j-1])==1&&cmp1(r[2*j-1],r[2*j])!=-1){
+    temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
+    j=2*j;
+    }
+    else if(cmp1(r[2*j],r[j-1])==1&&cmp1(r[2*j],r[2*j-1])!=-1){
+    temp=r[2*j];r[2*j]=r[j-1];r[j-1]=temp;
+    j=2*j+1;
+    }
+    else break;//停止更新
+    }
+    if(2*j==length&&cmp1(r[2*j-1],r[j-1])==1){//只有左子树
+    temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
+    }
+    }
+}
+void  lms:: heapsort(LM*r,int length)//堆排序
+{
+    LM temp;
+    for(int i=length;i>1;i--){
+    sift(r,i);
+    temp=r[0];
+    r[0]=r[i-1];
+    r[i-1]=temp;
+    }
+}
