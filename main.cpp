@@ -3,11 +3,13 @@
 #include "lms.h"
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+   /* QApplication a(argc, argv);
     MainWindow w;
-    w.show();
-    lms s;
-  //  s.print();
+    w.show();*/
+    lms s;s.print();
+    s.heapsort(s.base,s.length);
+  s.print();
 //s.~lms();
-    return a.exec();
+    //return a.exec();
+
 }
