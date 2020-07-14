@@ -33,6 +33,7 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     {
         if(i==this->length){
         this->base=(LM*)realloc(this->base,(this->length+Addition)*sizeof(LM));
+        if(! this->base){printf("内存不足\n");exit(1);}
             this->length+=Addition;
         }
     fread(aclinkId,sizeof(aclinkId),1,pfp);
@@ -44,7 +45,8 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     m=(int)acNodeInfo[3]&255;
     char roadname[30];
     fread(roadname,sizeof(char),ustotalsize-12,pfp);
-   printf("LinkID=");
+    if(i>60000){
+ /*printf("LinkID=");
     printf("%ld\t",ullinkId);
   printf("flag=");
   printf("%d\t",(m&128)/128);
@@ -56,21 +58,24 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
  printf("%d\t",strlen(roadname+4));
   printf("#");
    printf("\n");
-   printf("%d %d\n",i,this->length);
+printf("%d %d\n",i,this->length);*/
+    }
    this->base[i]=(LM)malloc(sizeof(LandMark));
+   if(! this->base[i]){printf("内存不足\n");exit(2);}
     this->base[i]->brunch=(m&112)/16;
     this->base[i]->disclass=m&15;
     this->base[i]->flag=(m&128)/128;
     this->base[i]->LinkId=ullinkId;
-    this->base[i]->roadname=(char*)malloc((strlen(roadname+4))*sizeof(char));
+    this->base[i]->roadname=(char*)malloc(30*sizeof(char));
+    if(! this->base[i]->roadname){printf("内存不足\n");exit(3);}
    strcpy( this->base[i]->roadname,roadname+4);
    i++;
     }
-    for(int j=i;j<this->length;j++){//清理多余的空间
-        free(this->base[j]->roadname);
+    this->length=i;
+    for(int j=this->length-1;j>=i;j--){
+          free(this->base[j]->roadname);
         free(this->base[j]);
     }
-    this->length=i;
     fclose(pfp);
 }
 void lms::print(){
