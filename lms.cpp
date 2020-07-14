@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<ctime>
 #define MCGETCHAR(data)(*((char*)(data)))
 #define MCGETSHORT(data)((unsigned short)((((unsigned short)(*((char*)(data))))<<8)|(((unsigned short)(*((char*)(data)+1)))&0x00ff)))
 #define MCGETLONG(data)((((unsigned long)MCGETSHORT((data)))<<16)|(((unsigned long)MCGETSHORT((char*)(data)+2))&0x0000ffff))
@@ -27,13 +28,13 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     printf("can not open the GTBL.DAT file or there is no the file!\n");system("pause");
     return ;
     }
-    printf("\n\n\t\t\t\t导入成功\n");
+   // printf("\n\n\t\t\t\t导入成功\n");
 
     while(fread(actotalsize,sizeof(actotalsize),1,pfp)==1)
     {
         if(i==this->length){
         this->base=(LM*)realloc(this->base,(this->length+Addition)*sizeof(LM));
-        if(! this->base){printf("内存不足\n");exit(1);}
+        if(! this->base){printf("fail to share memory->1\n");exit(1);}
             this->length+=Addition;
         }
     fread(aclinkId,sizeof(aclinkId),1,pfp);
@@ -61,13 +62,13 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
 printf("%d %d\n",i,this->length);*/
     }
    this->base[i]=(LM)malloc(sizeof(LandMark));
-   if(! this->base[i]){printf("内存不足\n");exit(2);}
+   if(! this->base[i]){printf("fail to share memory->2\n");exit(2);}
     this->base[i]->brunch=(m&112)/16;
     this->base[i]->disclass=m&15;
     this->base[i]->flag=(m&128)/128;
     this->base[i]->LinkId=ullinkId;
     this->base[i]->roadname=(char*)malloc(30*sizeof(char));
-    if(! this->base[i]->roadname){printf("内存不足\n");exit(3);}
+    if(! this->base[i]->roadname){printf("fail to share memory->3\n");exit(3);}
    strcpy( this->base[i]->roadname,roadname+4);
    i++;
     }
@@ -77,6 +78,7 @@ printf("%d %d\n",i,this->length);*/
         free(this->base[j]);
     }
     fclose(pfp);
+        printf("load OK\n");
 }
 void lms::print(){
     for(int i=0;i<this->length;i++){
@@ -90,18 +92,23 @@ lms::~lms(){
     }
     free (this->base);
 }
-int lms:: cmp1(LM p,LM q){
-    if(p->LinkId>q->LinkId)return 1;
+int lms:: cmp(LM p,LM q,int info){
+    switch(info){
+    case 1:if(p->LinkId>q->LinkId)return 1;
     else if(p->LinkId==q->LinkId) return 0;
-    else return -1;
+    else return -1;break;
+    case 2:if(p->flag>q->flag)return 1;
+        else if(p->flag==q->flag) return 0;
+        else return -1;break;
+    case 3:if(p->disclass>q->disclass)return 1;
+        else if(p->disclass==q->disclass) return 0;
+        else return -1;break;
+       default:if(p->brunch>q->brunch)return 1;
+        else if(p->brunch==q->brunch) return 0;
+        else return -1;break;
+    }
 }
-
-int lms:: cmp2(LM p,LM q){
-    if(p->LinkId>q->disclass)return 1;
-    else if(p->LinkId==q->disclass) return 0;
-    else return -1;
-}
-void  lms:: sift(LM*r,int length)//堆调整:化成大根堆
+void  lms:: sift(LM*r,int length,int info)//堆调整:化成大根堆
 {
     int start=length/2;//开始调整的节点
     int i,j;
@@ -109,28 +116,32 @@ void  lms:: sift(LM*r,int length)//堆调整:化成大根堆
     for(i=start;i>=1;i--){
     j=i;
     while(2*j+1<=length){//左右子树都有
-    if(cmp1(r[2*j-1],r[j-1])==1&&cmp1(r[2*j-1],r[2*j])!=-1){
+    if(cmp(r[2*j-1],r[j-1],info)==1&&cmp(r[2*j-1],r[2*j],info)!=-1){
     temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
     j=2*j;
     }
-    else if(cmp1(r[2*j],r[j-1])==1&&cmp1(r[2*j],r[2*j-1])!=-1){
+    else if(cmp(r[2*j],r[j-1],info)==1&&cmp(r[2*j],r[2*j-1],info)!=-1){
     temp=r[2*j];r[2*j]=r[j-1];r[j-1]=temp;
     j=2*j+1;
     }
     else break;//停止更新
     }
-    if(2*j==length&&cmp1(r[2*j-1],r[j-1])==1){//只有左子树
+    if(2*j==length&&cmp(r[2*j-1],r[j-1],info)==1){//只有左子树
     temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
     }
     }
 }
-void  lms:: heapsort(LM*r,int length)//堆排序
-{
+void  lms:: heapsort(LM*r,int length,int info)//堆排序
+{clock_t start, stop;
+    start=clock();
     LM temp;
     for(int i=length;i>1;i--){
-    sift(r,i);
+    sift(r,i,info);
     temp=r[0];
     r[0]=r[i-1];
     r[i-1]=temp;
     }
+    stop=clock();
+    double duration=(double)(stop-start)/CLK_TCK;
+    printf("time cost of sorting\n:%.1fms\n",1000*duration);
 }
