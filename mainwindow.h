@@ -20,8 +20,11 @@ protected:
 protected slots:
     void upBtnClicked();
     void downBtnClicked();
-
-
+void Sort_method_selected();
+void Sort_info_selected();
+void Find_method();
+void Find_info();
+void Find_txt();
 private:
     Ui::MainWindow *ui;
     int m_pageCount;
