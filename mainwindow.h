@@ -14,9 +14,20 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+protected:
+    void setListWidget(const int &currentPage);
+
+protected slots:
+    void upBtnClicked();
+    void downBtnClicked();
+
 
 private:
     Ui::MainWindow *ui;
+    int m_pageCount;
+
+    int m_currentPageNum;   //当前页数
+    int m_countPageNum;        //总页数
 };
 
 #endif // MAINWINDOW_H
