@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2020-07-13T22:46:04
+# Project created by QtCreator 2020-07-14T17:47:32
 #
 #-------------------------------------------------
 
@@ -8,15 +8,18 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = neu2020
+TARGET = neu202
 TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
-    lms.cpp
+    lms.cpp \
+    widget.cpp
 
-HEADERS  += mainwindow.h \
-    lms.h
+HEADERS  += \
+    lms.h \
+    widget.h
 
-FORMS    += mainwindow.ui
+FORMS    += \
+    widget.ui
+QMAKE_CXXFLAGS += -std=c++0x
