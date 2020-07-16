@@ -43,8 +43,10 @@ ui->cbox_Find_txt->addItem(QString("flag"));
 ui->cbox_Find_txt->addItem(QString("branch"));
 ui->cbox_Find_txt->addItem(QString("disclass"));
 ui->cbox_Find_txt->addItem(QString("roadname"));
+ui->tableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
 connect(ui->cbox_Find_txt, SIGNAL(currentIndexChanged(int)), this, SLOT(Find_info()));
 connect(ui->Txt_find, SIGNAL(editingFinished()), this, SLOT(Find_txt()));
+ connect(ui->tableWidget,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(getItem()));
 }
 
 MainWindow::~MainWindow()
@@ -110,12 +112,14 @@ void MainWindow::setListWidget(const int &currentPage)
         ui->tableWidget->setItem(i-startNum, 2, itemDeviceAddr);
         ui->tableWidget->setItem(i-startNum, 3, itemContent);
         ui->tableWidget->setItem(i-startNum, 4, itemTime);
-
 }
+    //分页*****************************************
     m_currentPageNum = currentPage;
     m_countPageNum = 300 / m_pageCount + 1;
     ui->currentPageLabel->setText(QString::number(m_currentPageNum));
     ui->countPageLabel->setText(QString::number(m_countPageNum));
+     //分页*****************************************
+
 }
 
 void MainWindow::upBtnClicked()
@@ -150,3 +154,7 @@ void MainWindow::Find_txt(){
 string s=ui->Txt_find->text().toStdString();
 cout<<s<<endl;
 }
+void MainWindow::getItem(){
+cout<<"DAO"<<endl;
+}
+
