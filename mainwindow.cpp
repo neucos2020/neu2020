@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    m_pageCount = 52;        //如果每页52条
+    m_pageCount =100;        //如果每页52条
  setListWidget(1);
     //默认第一页
 
@@ -43,10 +43,12 @@ ui->cbox_Find_txt->addItem(QString("flag"));
 ui->cbox_Find_txt->addItem(QString("branch"));
 ui->cbox_Find_txt->addItem(QString("disclass"));
 ui->cbox_Find_txt->addItem(QString("roadname"));
-ui->tableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
 connect(ui->cbox_Find_txt, SIGNAL(currentIndexChanged(int)), this, SLOT(Find_info()));
 connect(ui->Txt_find, SIGNAL(editingFinished()), this, SLOT(Find_txt()));
- connect(ui->tableWidget,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(getItem()));
+connect(ui->tableWidget,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(getItem()));
+connect(ui->tableWidget,SIGNAL(currentCellChanged(int,int,int,int)),this,SLOT(inputregex()));
+focusedrow=focusedcol=-1;//初始化
+lms ls;
 }
 
 MainWindow::~MainWindow()
@@ -63,7 +65,7 @@ void MainWindow::setListWidget(const int &currentPage)
     }
     int startNum = m_pageCount * (currentPage - 1);
 
-    ui->tableWidget->clear();
+ ui->tableWidget->clear();
 
    /* for(int i = 0; i < m_pageCount; i++){
 
@@ -88,8 +90,9 @@ void MainWindow::setListWidget(const int &currentPage)
     QStringList headText;
     headText << "LinkId" << "Flag" << "branch" << "disclass" << "roadname";
     ui->tableWidget->setHorizontalHeaderLabels(headText);
-    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectItems);
+    //ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
     ui->tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget->setAlternatingRowColors(true);
     ui->tableWidget->verticalHeader()->setVisible(false);
@@ -98,24 +101,26 @@ void MainWindow::setListWidget(const int &currentPage)
     //设置行高
     ui->tableWidget->setRowCount(m_pageCount);
 
-    for (int i = startNum; i <std::min(m_pageCount+startNum,300); i++) {
+    for (int i = startNum; i <std::min(m_pageCount+startNum,ls.length); i++) {
         ui->tableWidget->setRowHeight(i, 24);
 
-        QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(i + 1));
-        QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString("测试设备%1").arg(i + 1));
-        QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(i + 1));
-        QTableWidgetItem *itemContent = new QTableWidgetItem("防区告警");
-        QTableWidgetItem *itemTime = new QTableWidgetItem("?");
+        QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->LinkId));
+        QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->flag));
+        QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->brunch));
+        QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->disclass));
+        QTableWidgetItem *itemTime = new QTableWidgetItem(QString (QString::fromLocal8Bit(ls.base[i]->roadname)));
 
-        ui->tableWidget->setItem(i-startNum, 0, itemDeviceID);
-        ui->tableWidget->setItem(i-startNum, 1, itemDeviceName);
-        ui->tableWidget->setItem(i-startNum, 2, itemDeviceAddr);
-        ui->tableWidget->setItem(i-startNum, 3, itemContent);
-        ui->tableWidget->setItem(i-startNum, 4, itemTime);
-}
+        ui->tableWidget->setItem(i-startNum, 0, itemDeviceID);  ui->tableWidget->item(i-startNum, 0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->tableWidget->setItem(i-startNum, 1, itemDeviceName);ui->tableWidget->item(i-startNum, 1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->tableWidget->setItem(i-startNum, 2, itemDeviceAddr);ui->tableWidget->item(i-startNum, 2)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->tableWidget->setItem(i-startNum, 3, itemContent);ui->tableWidget->item(i-startNum, 3)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+        ui->tableWidget->setItem(i-startNum, 4, itemTime);ui->tableWidget->item(i-startNum, 4)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+ui->tableWidget->item(i-startNum,0)->setFlags(Qt::ItemIsEnabled);
+    }
+
     //分页*****************************************
     m_currentPageNum = currentPage;
-    m_countPageNum = 300 / m_pageCount + 1;
+    m_countPageNum = ls.length / m_pageCount + 1;
     ui->currentPageLabel->setText(QString::number(m_currentPageNum));
     ui->countPageLabel->setText(QString::number(m_countPageNum));
      //分页*****************************************
@@ -124,7 +129,7 @@ void MainWindow::setListWidget(const int &currentPage)
 
 void MainWindow::upBtnClicked()
 {
-    setListWidget(m_currentPageNum - 1);
+   setListWidget(m_currentPageNum - 1);
 }
 
 void MainWindow::downBtnClicked()
@@ -155,6 +160,22 @@ string s=ui->Txt_find->text().toStdString();
 cout<<s<<endl;
 }
 void MainWindow::getItem(){
-cout<<"DAO"<<endl;
+    connect(ui->tableWidget,SIGNAL(currentCellChanged(int,int,int,int)),this,SLOT(inputregex()));
+    if(!ui->tableWidget->selectedItems().isEmpty()){
+   focusedrow=ui->tableWidget->selectedItems()[0]->row();
+    focusedcol=ui->tableWidget->selectedItems()[0]->column();
+}
+    else{
+        ui->tableWidget->disconnect(SIGNAL(currentCellChanged(int,int,int,int)));
+    }
+}
+void MainWindow::inputregex(){
+    if(focusedrow!=-1){
+ui->tableWidget->disconnect(SIGNAL(currentCellChanged(int,int,int,int)));
+cout<<focusedrow<<" "<<focusedcol<<endl;
+//***********************
+
+//***********************
+}
 }
 
