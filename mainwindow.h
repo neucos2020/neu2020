@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 #include <QMainWindow>
 #include<lms.h>
+#include<QTableWidget>
 namespace Ui {
 class MainWindow;
 }
@@ -26,6 +27,9 @@ void Find_info();
 void Find_txt();
 void getItem();
 void inputregex();
+void change_del_col();//展示/关闭删除栏
+void delete_info_confirm(int);//点击header事件
+void getcheckbox(QTableWidgetItem*);
 private:
     Ui::MainWindow *ui;
     int m_pageCount;
@@ -34,8 +38,10 @@ private:
     int m_countPageNum;        //总页数
     int focusedrow;
     int focusedcol;
+    bool* chosen;//显示某元素是否已经被选中：准备删除
     lms ls;
 };
 
 #endif // MAINWINDOW_H
+
 
