@@ -195,7 +195,10 @@ int width=ui->tableWidget->width();
                 ui->tableWidget->setColumnWidth(3,  width/6);
                 ui->tableWidget->setColumnWidth(4, width/6);
                 ui->tableWidget->verticalHeader()->setDefaultSectionSize(25);
-
+                check=new QCheckBox*[m_pageCount];//复选框集合
+                for(int i=0;i<m_pageCount;i++){
+                check[i]=new QCheckBox();
+                }
                 QStringList headText;
                 headText <<QString::fromLocal8Bit("delete")<< "LinkId" << "Flag" << "branch" << "disclass" << "roadname";
                 ui->tableWidget->setHorizontalHeaderLabels(headText);
@@ -342,5 +345,3 @@ cout<<"already cleared"<<endl;
         ui->tableWidget->setHorizontalHeaderLabels(headText);
     }
 }
-
-
