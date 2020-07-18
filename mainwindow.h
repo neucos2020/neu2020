@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include<lms.h>
 #include<QTableWidget>
+#include<QCheckBox>
 namespace Ui {
 class MainWindow;
 }
@@ -29,11 +30,10 @@ void getItem();
 void inputregex();
 void change_del_col();//展示/关闭删除栏
 void delete_info_confirm(int);//点击header事件
-void getcheckbox(QTableWidgetItem*);
 private:
     Ui::MainWindow *ui;
     int m_pageCount;
-
+QCheckBox**check;
     int m_currentPageNum;   //当前页数
     int m_countPageNum;        //总页数
     int focusedrow;
@@ -43,5 +43,6 @@ private:
 };
 
 #endif // MAINWINDOW_H
+
 
 
