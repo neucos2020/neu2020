@@ -46,21 +46,6 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     m=(int)acNodeInfo[3]&255;
     char roadname[30];
     fread(roadname,sizeof(char),ustotalsize-12,pfp);
-    if(i>60000){
- /*printf("LinkID=");
-    printf("%ld\t",ullinkId);
-  printf("flag=");
-  printf("%d\t",(m&128)/128);
-  printf("brunch=");
-  printf("%d\t",(m&112)/16);
-  printf("dispclass=");
-   printf("%d\t",m&15);
-  printf("Roadname=");
- printf("%d\t",strlen(roadname+4));
-  printf("#");
-   printf("\n");
-printf("%d %d\n",i,this->length);*/
-    }
    this->base[i]=(LM)malloc(sizeof(LandMark));
    if(! this->base[i]){printf("fail to share memory->2\n");exit(2);}
     this->base[i]->brunch=(m&112)/16;
@@ -108,40 +93,154 @@ int lms:: cmp(LM p,LM q,int info){
         else return -1;break;
     }
 }
-void  lms:: sift(LM*r,int length,int info)//堆调整:化成大根堆
-{
-    int start=length/2;//开始调整的节点
-    int i,j;
-   LM temp;
-    for(i=start;i>=1;i--){
-    j=i;
-    while(2*j+1<=length){//左右子树都有
-    if(cmp(r[2*j-1],r[j-1],info)==1&&cmp(r[2*j-1],r[2*j],info)!=-1){
-    temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
-    j=2*j;
-    }
-    else if(cmp(r[2*j],r[j-1],info)==1&&cmp(r[2*j],r[2*j-1],info)!=-1){
-    temp=r[2*j];r[2*j]=r[j-1];r[j-1]=temp;
-    j=2*j+1;
-    }
-    else break;//停止更新
-    }
-    if(2*j==length&&cmp(r[2*j-1],r[j-1],info)==1){//只有左子树
-    temp=r[2*j-1];r[2*j-1]=r[j-1];r[j-1]=temp;
-    }
+void lms::heapInsert(LM *r, int length, int info){
+    for (int i = 0; i <length; i++) {
+             //当前插入的索引
+             int currentIndex = i;
+             LM temp;
+             //父结点索引
+             int fatherIndex = (currentIndex - 1) / 2;
+             //如果当前插入的值大于其父结点的值,则交换值，并且将索引指向父结点
+             //然后继续和上面的父结点值比较，直到不大于父结点，则退出循环
+             while (cmp(r[currentIndex],r[fatherIndex],info)==1) {
+                 //交换当前结点与父结点的值
+                 temp=r[currentIndex];r[currentIndex]=r[fatherIndex];r[fatherIndex]=temp;
+                 //将当前索引指向父索引
+                 currentIndex = fatherIndex;
+                 //重新计算当前索引的父索引
+                 fatherIndex = (currentIndex - 1) / 2;
+             }
+         }
+}
+void lms::heapify(LM *r, int index, int size, int info){
+    int left = 2 * index + 1;
+    int right = 2 * index + 2;
+    LM temp;
+    while (left < size) {
+        int largestIndex;
+        //判断孩子中较大的值的索引（要确保右孩子在size范围之内）
+        if (cmp(r[right],r[left],info)==1 && right < size) {
+            largestIndex = right;
+        } else {
+            largestIndex = left;
+        }
+        //比较父结点的值与孩子中较大的值，并确定最大值的索引
+        if (cmp(r[index],r[largestIndex],info)==1) {
+            largestIndex = index;
+        }
+        //如果父结点索引是最大值的索引，那已经是大根堆了，则退出循环
+        if (index == largestIndex) {
+            break;
+        }
+        //父结点不是最大值，与孩子中较大的值交换
+       temp=r[index];r[index]=r[largestIndex];r[largestIndex]=temp;
+        //将索引指向孩子中较大的值的索引
+        index = largestIndex;
+        //重新计算交换之后的孩子的索引
+        left = 2 * index + 1;
+        right = 2 * index + 2;
     }
 }
-void  lms:: heapsort(LM*r,int length,int info)//堆排序
+void lms::heapSort(LM *r, int length, int info){
+    //构造大根堆
+    clock_t start, stop;
+        start=clock();
+    LM temp;
+          heapInsert(r,length,info);
+          int size = length;
+          while (size > 1) {
+              //固定最大值
+             temp=r[0];r[0]=r[size-1];r[size-1]=temp;
+              size--;
+              //构造大根堆
+              heapify(r,0,size,info);
+
+          }
+          stop=clock();
+          double duration=(double)(stop-start)/CLK_TCK;
+          printf("time cost of sorting\n:%.1fms\n",1000*duration);
+}
+void lms::shellsort(LM *r, int length, int info)
 {clock_t start, stop;
     start=clock();
+    int j=length/2;
+    int i,h;
     LM temp;
-    for(int i=length;i>1;i--){
-    sift(r,i,info);
-    temp=r[0];
-    r[0]=r[i-1];
-    r[i-1]=temp;
+    for(;j>0;j=j/2){
+        for(i=j;i<length;i++){
+            temp=r[i];
+            for(h=i-j;h>0&&cmp(temp,r[h],info)==-1;h=h-j){
+                r[h+j]=r[h];
+            }
+            r[h+j]=temp;
+        }
     }
     stop=clock();
     double duration=(double)(stop-start)/CLK_TCK;
     printf("time cost of sorting\n:%.1fms\n",1000*duration);
 }
+int lms::Partition(LM *r, int start, int end, int info){
+    int i,j;
+    i=start;j=end;
+    LM temp;
+    while(i<j){
+        while(i<j&&cmp(r[j],r[i],info)!=-1){
+            j--;
+        }
+        if(i<j){
+            temp=r[i];r[i]=r[j];r[j]=temp;i++;
+        }
+        while(i<j&&r[i]<=r[j])i++;
+        if(i<j){
+            temp=r[i];r[i]=r[j];r[j]=temp;j--;
+        }
+}
+    return i;
+}
+void lms::QuickSort(LM *r, int start, int end, int info){
+    int flag;
+   if(start<end){
+       flag=Partition(r,start,end,info);
+       QuickSort(r,start,flag-1,info);
+        QuickSort( r,flag+1,end,info);
+   }
+}
+void  lms:: bubbleSort(LM* r,int length,int info) {
+    clock_t start, stop;
+    start=clock();
+    LM rtemp;
+    int i,j;
+    for(i = 0; i < length - 1; i++) {
+        for(j = 0; j < length - 1 - i; j++) {
+            if(cmp(r[j+1],r[j],info)==-1) {        // 相邻元素两两对比
+                rtemp = r[j+1];        // 元素交换
+                r[j+1] = r[j];
+                r[j] = rtemp;
+            }
+        }
+    }
+    stop=clock();
+    double duration=(double)(stop-start)/CLK_TCK;
+    printf("time cost of sorting\n:%.1fms\n",1000*duration);
+}
+void  lms:: selectionSort(LM* r,int length,int info) {
+    clock_t start, stop;
+    start=clock();
+    int i,j,minIndex;
+    LM temp;
+    for(i = 0; i < length - 1; i++) {
+        minIndex = i;
+        for(j = i + 1; j < length; j++) {
+            if(cmp(r[j],r[minIndex],info)==-1) {     // 寻找最小的数
+                minIndex = j;                 // 将最小数的索引保存
+            }
+        }
+        temp = r[i];
+        r[i] = r[minIndex];
+        r[minIndex] = temp;
+    }
+    stop=clock();
+    double duration=(double)(stop-start)/CLK_TCK;
+    printf("time cost of sorting\n:%.1fms\n",1000*duration);
+}
+
