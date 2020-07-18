@@ -10,10 +10,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    m_pageCount =100;        //如果每页100条
- setListWidget(1);
+   m_pageCount =100;        //如果每页100条
     //默认第一页
-connect(ui->tableWidget,SIGNAL(itemPressed(QTableWidgetItem*)),this,SLOT(getcheckbox(QTableWidgetItem*)));
     connect(ui->upPushButton, SIGNAL(clicked()), this, SLOT(upBtnClicked()));
     connect(ui->downPushButton, SIGNAL(clicked()), this, SLOT(downBtnClicked()));
     ui->cbox_Sort->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -50,11 +48,11 @@ connect(ui->tableWidget,SIGNAL(doubleClicked(QModelIndex)),this,SLOT(getItem()))
 connect(ui->tableWidget,SIGNAL(currentCellChanged(int,int,int,int)),this,SLOT(inputregex()));
 connect(ui->tableWidget->horizontalHeader(), SIGNAL(sectionClicked(int)), this, SLOT(delete_info_confirm(int)));
 focusedrow=focusedcol=-1;//初始化
-lms ls;
 chosen=new bool[ls.length];
 for(int i=0;i<ls.length;i++){
     chosen[i]=false;
 }
+ setListWidget(1);
 }
 
 MainWindow::~MainWindow()
@@ -89,7 +87,10 @@ void MainWindow::setListWidget(const int &currentPage)
     ui->tableWidget->setColumnWidth(3, 200);
     ui->tableWidget->setColumnWidth(4, 200);
     ui->tableWidget->verticalHeader()->setDefaultSectionSize(25);
-
+    check=new QCheckBox*[m_pageCount];//复选框集合
+    for(int i=0;i<m_pageCount;i++){
+    check[i]=new QCheckBox();
+    }
     QStringList headText;
     headText << "LinkId" << "Flag" << "branch" << "disclass" << "roadname";
     ui->tableWidget->setHorizontalHeaderLabels(headText);
@@ -111,7 +112,7 @@ void MainWindow::setListWidget(const int &currentPage)
         QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->brunch));
         QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->disclass));
         QTableWidgetItem *itemTime = new QTableWidgetItem(QString (QString::fromLocal8Bit(ls.base[i]->roadname)));
-
+check[i-startNum]->setChecked(Qt::Checked);
         ui->tableWidget->setItem(i-startNum, 0, itemDeviceID);  ui->tableWidget->item(i-startNum, 0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
         ui->tableWidget->setItem(i-startNum, 1, itemDeviceName);ui->tableWidget->item(i-startNum, 1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
         ui->tableWidget->setItem(i-startNum, 2, itemDeviceAddr);ui->tableWidget->item(i-startNum, 2)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
@@ -130,7 +131,15 @@ ui->tableWidget->item(i-startNum,0)->setFlags(Qt::ItemIsEnabled);
 }
 
 void MainWindow::upBtnClicked()
-{
+{if(ui->tableWidget->columnCount()==6)
+    {for(int i=0;i<m_pageCount;i++){
+    if(check[i]->isChecked()){
+        chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+    }
+    else{
+         chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+    }
+        }}
    setListWidget(m_currentPageNum - 1);
 }
 
@@ -138,7 +147,15 @@ void MainWindow::downBtnClicked()
 {
     if(m_currentPageNum >= m_countPageNum)
         return;
-
+    if(ui->tableWidget->columnCount()==6)
+        {for(int i=0;i<m_pageCount;i++){
+        if(check[i]->isChecked()){
+            chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+        }
+        else{
+             chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+        }
+            }}
     setListWidget(m_currentPageNum + 1);
 }
 void MainWindow::Sort_method_selected()
@@ -204,13 +221,15 @@ int width=ui->tableWidget->width();
                 // QLabel *l1 = new QLabel();
                 // l1->setPixmap(QPixmap("C://Users\\SUE\\Documents\\neu2020\\green_panel.jpg"));
                     QWidget *widget = new QWidget(ui->tableWidget);
-                        QCheckBox* checkbox = new QCheckBox();
-                        checkbox->setCheckState(Qt::Unchecked);
+                  //  printf("%d\n",i);
+                     if(chosen[i])
+                         check[i-startNum]->setCheckState(Qt::Checked);
+                     else
+                         check[i-startNum]->setCheckState(Qt::Unchecked);
                         QHBoxLayout *hLayout = new QHBoxLayout();
-                        hLayout->addWidget(checkbox);
+                        hLayout->addWidget(check[i-startNum]);
                         hLayout->setMargin(0);                              // 必须添加, 否则CheckBox不能正常显示
-                        hLayout->setAlignment(checkbox, Qt::AlignCenter);   // 居中显示复选框
-
+                        hLayout->setAlignment(check[i-startNum], Qt::AlignCenter);   // 居中显示复选框
                         widget->setLayout(hLayout);
                         ui->tableWidget->setIndexWidget(ui->tableWidget->model()->index(i-startNum , 0), widget);
                 // l1->setAlignment(Qt::AlignHCenter);  ui->tableWidget->setCellWidget(i-startNum,0,l1);
@@ -228,6 +247,16 @@ int width=ui->tableWidget->width();
                 }
     }
     else{//收删除栏
+        //*******************************该部分先计算chosen[]
+        for(int i=0;i<m_pageCount;i++){
+            if(check[i]->isChecked()){
+                chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+            }
+            else{
+                 chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+            }
+            }
+        //*******************************该部分先计算chosen[]
         int nowrows=ui->tableWidget->rowCount();
         int startNum = nowrows * (m_currentPageNum - 1);
 
@@ -296,8 +325,7 @@ void MainWindow::getItem()//辅助inputregex()并展示/收起删除列
     }
 }
 void MainWindow::inputregex(){//判断修改内容
-    if(focusedrow!=-1){
-ui->tableWidget->disconnect(SIGNAL(currentCellChanged(int,int,int,int)));
+    if(focusedrow!=-1){ui->tableWidget->disconnect(SIGNAL(currentCellChanged(int,int,int,int)));
 cout<<focusedrow<<" "<<focusedcol<<endl;
 //***********************
 
@@ -314,9 +342,5 @@ cout<<"already cleared"<<endl;
         ui->tableWidget->setHorizontalHeaderLabels(headText);
     }
 }
-void MainWindow::getcheckbox(QTableWidgetItem* p){
-     if(ui->tableWidget->columnCount()==6&&p->column()==0){
-         cout<<p->row()<<" "<<p->column()<<endl;
-     }
-}
+
 
