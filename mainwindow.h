@@ -7,7 +7,6 @@
 namespace Ui {
 class MainWindow;
 }
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -41,8 +40,8 @@ QCheckBox**check;//复选框对象指针
     int m_countPageNum;        //总页数
     int focusedrow;//指示修改的行数
     int focusedcol;//指示修改的页数
-    bool* chosen;//显示某元素是否已经被选中：准备删除
     lms ls;//数据操作的核心对象
 };
 
 #endif // MAINWINDOW_H
+
