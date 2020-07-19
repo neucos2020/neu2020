@@ -47,11 +47,13 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     char roadname[30];
     fread(roadname,sizeof(char),ustotalsize-12,pfp);
    this->base[i]=(LM)malloc(sizeof(LandMark));
+    this->base[i]->data=(int*)malloc(sizeof(int)*4);
    if(! this->base[i]){printf("fail to share memory->2\n");exit(2);}
-    this->base[i]->brunch=(m&112)/16;
-    this->base[i]->disclass=m&15;
-    this->base[i]->flag=(m&128)/128;
-    this->base[i]->LinkId=ullinkId;
+    this->base[i]->data[0]=ullinkId;
+    this->base[i]->data[1]=(m&128)/128;
+    this->base[i]->data[2]=(m&112)/16;
+    this->base[i]->data[3]=m&15;
+   this->base[i]->selected=false;//默认没有选中
     this->base[i]->roadname=(char*)malloc(30*sizeof(char));
     if(! this->base[i]->roadname){printf("fail to share memory->3\n");exit(3);}
    strcpy( this->base[i]->roadname,roadname+4);
@@ -60,6 +62,7 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
     this->length=i;
     for(int j=this->length-1;j>=i;j--){
           free(this->base[j]->roadname);
+          free(this->base[j]->data);
         free(this->base[j]);
     }
     fclose(pfp);
@@ -67,7 +70,7 @@ this->base=(LM*)malloc(sizeof(LM)*Length);
 }
 void lms::print(){
     for(int i=0;i<this->length;i++){
-        printf("LinkId:%d flag:%d brunch:%d disclass:%d roadname:%s\n",this->base[i]->LinkId,this->base[i]->brunch, this->base[i]->brunch,this->base[i]->disclass,this->base[i]->roadname);
+        printf("LinkId:%d flag:%d brunch:%d disclass:%d roadname:%s\n",this->base[i]->data[0],this->base[i]->data[1], this->base[i]->data[2],this->base[i]->data[3],this->base[i]->roadname);
     }
 }
 lms::~lms(){
@@ -76,22 +79,6 @@ lms::~lms(){
         free(this->base[0]);
     }
     free (this->base);
-}
-int lms:: cmp(LM p,LM q,int info){
-    switch(info){
-    case 1:if(p->LinkId>q->LinkId)return 1;
-    else if(p->LinkId==q->LinkId) return 0;
-    else return -1;break;
-    case 2:if(p->flag>q->flag)return 1;
-        else if(p->flag==q->flag) return 0;
-        else return -1;break;
-    case 3:if(p->disclass>q->disclass)return 1;
-        else if(p->disclass==q->disclass) return 0;
-        else return -1;break;
-       default:if(p->brunch>q->brunch)return 1;
-        else if(p->brunch==q->brunch) return 0;
-        else return -1;break;
-    }
 }
 void lms::heapInsert(LM *r, int length, int info){
     for (int i = 0; i <length; i++) {
@@ -102,7 +89,7 @@ void lms::heapInsert(LM *r, int length, int info){
              int fatherIndex = (currentIndex - 1) / 2;
              //如果当前插入的值大于其父结点的值,则交换值，并且将索引指向父结点
              //然后继续和上面的父结点值比较，直到不大于父结点，则退出循环
-             while (cmp(r[currentIndex],r[fatherIndex],info)==1) {
+             while (r[currentIndex]->data[info-1]>r[fatherIndex]->data[info-1]) {
                  //交换当前结点与父结点的值
                  temp=r[currentIndex];r[currentIndex]=r[fatherIndex];r[fatherIndex]=temp;
                  //将当前索引指向父索引
@@ -119,13 +106,13 @@ void lms::heapify(LM *r, int index, int size, int info){
     while (left < size) {
         int largestIndex;
         //判断孩子中较大的值的索引（要确保右孩子在size范围之内）
-        if (cmp(r[right],r[left],info)==1 && right < size) {
+        if (r[right]->data[info-1]>r[left]->data[info-1] && right < size) {
             largestIndex = right;
         } else {
             largestIndex = left;
         }
         //比较父结点的值与孩子中较大的值，并确定最大值的索引
-        if (cmp(r[index],r[largestIndex],info)==1) {
+        if (r[index]->data[info-1]>r[largestIndex]->data[info-1]) {
             largestIndex = index;
         }
         //如果父结点索引是最大值的索引，那已经是大根堆了，则退出循环
@@ -169,7 +156,7 @@ void lms::shellsort(LM *r, int length, int info)
     for(;j>0;j=j/2){
         for(i=j;i<length;i++){
             temp=r[i];
-            for(h=i-j;h>0&&cmp(temp,r[h],info)==-1;h=h-j){
+            for(h=i-j;h>0&&r[h]->data[info-1]<r[h]->data[info-1];h=h-j){
                 r[h+j]=r[h];
             }
             r[h+j]=temp;
@@ -184,13 +171,13 @@ int lms::Partition(LM *r, int start, int end, int info){
     i=start;j=end;
     LM temp;
     while(i<j){
-        while(i<j&&cmp(r[j],r[i],info)!=-1){
+        while(i<j&&r[j]->data[info-1]>=r[i]->data[info-1]){
             j--;
         }
         if(i<j){
             temp=r[i];r[i]=r[j];r[j]=temp;i++;
         }
-        while(i<j&&r[i]<=r[j])i++;
+        while(i<j&&r[j]->data[info-1]>=r[i]->data[info-1])i++;
         if(i<j){
             temp=r[i];r[i]=r[j];r[j]=temp;j--;
         }
@@ -212,7 +199,7 @@ void  lms:: bubbleSort(LM* r,int length,int info) {
     int i,j;
     for(i = 0; i < length - 1; i++) {
         for(j = 0; j < length - 1 - i; j++) {
-            if(cmp(r[j+1],r[j],info)==-1) {        // 相邻元素两两对比
+            if(r[j+1]->data[info-1]<r[j]->data[info-1]) {        // 相邻元素两两对比
                 rtemp = r[j+1];        // 元素交换
                 r[j+1] = r[j];
                 r[j] = rtemp;
@@ -231,7 +218,7 @@ void  lms:: selectionSort(LM* r,int length,int info) {
     for(i = 0; i < length - 1; i++) {
         minIndex = i;
         for(j = i + 1; j < length; j++) {
-            if(cmp(r[j],r[minIndex],info)==-1) {     // 寻找最小的数
+            if(r[j]->data[info-1]<r[minIndex]->data[info-1]) {     // 寻找最小的数
                 minIndex = j;                 // 将最小数的索引保存
             }
         }
