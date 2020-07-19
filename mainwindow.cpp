@@ -4,6 +4,7 @@
 #include<qcheckbox.h>
 #include<iostream>
 #include<string>
+#include<QTextCodec>
 using namespace std;
 MainWindow::MainWindow(QWidget *parent) ://主窗口的构造函数
     QMainWindow(parent),
@@ -30,10 +31,10 @@ MainWindow::MainWindow(QWidget *parent) ://主窗口的构造函数
 //***********************************************
     ui->cbox_Sort->addItem(QString("-请选择-"));
     ui->cbox_Sort->addItem(QString("选择排序"));
-    ui->cbox_Sort->addItem(QString("基数排序"));
+    ui->cbox_Sort->addItem(QString("冒泡排序"));
     ui->cbox_Sort->addItem(QString("堆排序"));
     ui->cbox_Sort->addItem(QString("快速排序"));
-    ui->cbox_Sort->addItem(QString("插入排序"));
+    ui->cbox_Sort->addItem(QString("希尔排序"));
     //***********************************************
     ui->cbox_Sort_info->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     ui->cbox_Sort_info->addItem(QString("-请选择-"));
@@ -58,11 +59,8 @@ MainWindow::MainWindow(QWidget *parent) ://主窗口的构造函数
     //所有选择框(Combobox)初始化
     //部分成员变量初始化:
     m_pageCount =100;        //此处规定每页有100页
+    ls.origin_length=ls.length;//这个变量用于对所有的数据进行排序或查找的时候重置ls.length
 focusedrow=focusedcol=-1;//初始化
-chosen=new bool[ls.length];
-for(int i=0;i<ls.length;i++){
-    chosen[i]=false;
-}
  //部分成员变量初始化
  setListWidget(1);//显示初始的表格
 }
@@ -71,7 +69,6 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
 void MainWindow::setListWidget(const int &currentPage)//制作表格的函数:传入参数是当前是第几页
 {
     if(currentPage <= 0){//如果出现异常，比如当前页面是0
@@ -108,16 +105,17 @@ void MainWindow::setListWidget(const int &currentPage)//制作表格的函数:�
     ui->tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget->setAlternatingRowColors(true);
     ui->tableWidget->verticalHeader()->setVisible(false);
+    ui->tableWidget->horizontalHeader()->setStyleSheet("QHeaderView::section{background:skyblue;}"); //设置表头背景色
     ui->tableWidget->horizontalHeader()->setStretchLastSection(true);
     ui->tableWidget->setRowCount(m_pageCount);//表格行数设置
     //表格诸参数设置
     for (int i = startNum; i <std::min(m_pageCount+startNum,ls.length); i++) {//std::min(m_pageCount+startNum是在最后一页时出现不满m_pageCount行时的处理办法;
         ui->tableWidget->setRowHeight(i, 24);//设置行高
         //表格元素设置
-        QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->LinkId));
-        QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->flag));
-        QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->brunch));
-        QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->disclass));
+        QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->data[0]));
+        QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->data[1]));
+        QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->data[2]));
+        QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->data[3]));
         QTableWidgetItem *itemTime = new QTableWidgetItem(QString (QString::fromLocal8Bit(ls.base[i]->roadname)));//这里是为了解决中文乱码
 
 //check[i-startNum]->setChecked(Qt::Checked);
@@ -141,12 +139,14 @@ void MainWindow::setListWidget(const int &currentPage)//制作表格的函数:�
 
 void MainWindow::upBtnClicked()//向上一页触发函数
 {if(ui->tableWidget->columnCount()==6)//如过当前的删除栏开着的话要统计并修改选中对象chosen[]
-    {for(int i=0;i<m_pageCount;i++){
+    {for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
     if(check[i]->isChecked()){//选中
-        chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+      //  chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+        ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
     }
     else{//未选中
-         chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+    //     chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+          ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
     }
         }}//如过当前的删除栏开着的话要统计并修改选中对象chosen[]
    setListWidget(m_currentPageNum - 1);//设置表格
@@ -157,20 +157,65 @@ void MainWindow::downBtnClicked()//向下一页触发函数
     if(m_currentPageNum >= m_countPageNum)//如果超出了总页数不可翻页
         return;
     if(ui->tableWidget->columnCount()==6)//同上
-        {for(int i=0;i<m_pageCount;i++){
+        {for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
         if(check[i]->isChecked()){
-            chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+       //     chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+            ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
         }
         else{
-             chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+          //   chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+              ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
         }
             }}
     setListWidget(m_currentPageNum + 1);//设置表格
 }
-void MainWindow::Sort_method_selected()
-{}
+void MainWindow::Sort_method_selected()//这和下面的函数是一样的效果
+{
+    int i;
+        int p=ui->cbox_Sort->currentIndex();
+        int q=ui->cbox_Sort_info->currentIndex();
+        if(p>0&&q>0){
+           ls.heapSort(ls.base,ls.length,-5);//选人
+           for(i=0;i<ls.length;i++){
+               if(!ls.base[i]->selected){break;}
+           }
+           if(i!=0){
+               ls.length=i;
+           }
+
+           switch(p){
+           case 1:cout<<"初级排序可能比较慢"<<endl;ls.selectionSort(ls.base,ls.length,q);break;
+           case 2:cout<<"初级排序可能比较慢"<<endl;ls.bubbleSort(ls.base,ls.length,q);break;
+           case 3:ls.heapSort(ls.base,ls.length,q);break;
+           case 4:ls.QuickSort(ls.base,0,ls.length-1,q);break;
+           case 5:ls.shellsort(ls.base,ls.length,q);break;
+           }
+         setListWidget(1);
+        }
+}
 void MainWindow::Sort_info_selected()
-{}
+{ int i;
+    int p=ui->cbox_Sort->currentIndex();
+    int q=ui->cbox_Sort_info->currentIndex();
+    if(p>0&&q>0){
+       ls.heapSort(ls.base,ls.length,-5);//选人
+       for(i=0;i<ls.length;i++){
+           if(!ls.base[i]->selected){break;}
+       }
+       if(i!=0){
+           ls.length=i;
+       }
+
+       switch(p){
+       case 1:cout<<"初级排序可能比较慢"<<endl;ls.selectionSort(ls.base,ls.length,q);break;
+       case 2:cout<<"初级排序可能比较慢"<<endl;ls.bubbleSort(ls.base,ls.length,q);break;
+       case 3:ls.heapSort(ls.base,ls.length,q);break;
+       case 4:ls.QuickSort(ls.base,0,ls.length-1,q);break;
+       case 5:ls.shellsort(ls.base,ls.length,q);break;
+       }
+     setListWidget(1);
+    }
+}
 void MainWindow::Find_method()
 {}
 void MainWindow::Find_info()
@@ -220,13 +265,13 @@ void MainWindow::change_del_col()//打开或关闭删除栏：这个函数相当
                 {
                     ui->tableWidget->setRowHeight(i, 24);//设置行数
                     //表格元素设置
-                    QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->LinkId));
-                    QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->flag));
-                    QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->brunch));
-                    QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->disclass));
+                    QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->data[0]));
+                    QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->data[1]));
+                    QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->data[2]));
+                    QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->data[3]));
                     QTableWidgetItem *itemTime = new QTableWidgetItem(QString (QString::fromLocal8Bit(ls.base[i]->roadname)));
                     QWidget *widget = new QWidget(ui->tableWidget);//这个widget放进tablewidgetitem
-                     if(chosen[i])//改变复选框状态：已经选过的就标选过
+                     if(ls.base[i]->selected)//改变复选框状态：已经选过的就标选过
                          check[i-startNum]->setCheckState(Qt::Checked);
                      else
                          check[i-startNum]->setCheckState(Qt::Unchecked);
@@ -256,12 +301,14 @@ void MainWindow::change_del_col()//打开或关闭删除栏：这个函数相当
     }
     else{//收删除栏
         //*******************************该部分先计算chosen[]
-        for(int i=0;i<m_pageCount;i++){
+        for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
             if(check[i]->isChecked()){
-                chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+              //  chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+                   ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
             }
             else{
-                 chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+                // chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+                    ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
             }
             }
         //*******************************该部分先计算chosen[]
@@ -297,10 +344,10 @@ void MainWindow::change_del_col()//打开或关闭删除栏：这个函数相当
         {
             ui->tableWidget->setRowHeight(i, 24);
 
-            QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->LinkId));
-            QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->flag));
-            QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->brunch));
-            QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->disclass));
+            QTableWidgetItem *itemDeviceID = new QTableWidgetItem(QString::number(ls.base[i]->data[0]));
+            QTableWidgetItem *itemDeviceName = new QTableWidgetItem(QString::number(ls.base[i]->data[1]));
+            QTableWidgetItem *itemDeviceAddr = new QTableWidgetItem(QString::number(ls.base[i]->data[2]));
+            QTableWidgetItem *itemContent = new QTableWidgetItem(QString::number(ls.base[i]->data[3]));
             QTableWidgetItem *itemTime = new QTableWidgetItem(QString (QString::fromLocal8Bit(ls.base[i]->roadname)));
 
             ui->tableWidget->setItem(i-startNum, 0, itemDeviceID);  ui->tableWidget->item(i-startNum, 0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
@@ -329,7 +376,23 @@ void MainWindow::inputregex(){//判断修改内容:
     if(focusedrow!=-1){ui->tableWidget->disconnect(SIGNAL(currentCellChanged(int,int,int,int)));
 cout<<focusedrow<<" "<<focusedcol<<endl;
 //***********************
-
+QRegExp rx("^[0-9]*[1-9][0-9]*$");//正则表达式判断是不是正整数
+if(rx.indexIn(ui->tableWidget->item(focusedrow,focusedcol)->text())==-1&&focusedcol<4){//不是正整数
+    ui->Page_info->setText(QString("illegal input"));
+}
+else{//修改lms.ls
+   if(focusedcol<4){
+       //ls.base[focusedrow+(m_currentPageNum-1)*m_pageCount]
+       switch(focusedcol){
+       case 1:ls.base[focusedrow+(m_currentPageNum-1)*m_pageCount]->data[1]=ui->tableWidget->item(focusedrow,focusedcol)->text().toInt();break;
+        case 2:ls.base[focusedrow+(m_currentPageNum-1)*m_pageCount]->data[2]=ui->tableWidget->item(focusedrow,focusedcol)->text().toInt();break;
+       case 3:ls.base[focusedrow+(m_currentPageNum-1)*m_pageCount]->data[3]=ui->tableWidget->item(focusedrow,focusedcol)->text().toInt();break;
+       }
+   }
+   else{QByteArray cpath = ui->tableWidget->item(focusedrow,focusedcol)->text().toLocal8Bit();char *p = cpath.data();//解决QString转char*中文乱码
+        strcpy(ls.base[focusedrow+(m_currentPageNum-1)*m_pageCount]->roadname,p);
+   }
+}
 //***********************
 }
 }
@@ -345,24 +408,28 @@ cout<<"already cleared"<<endl;
 }
 void MainWindow::change_to_head(){//跳到首页函数
     if(ui->tableWidget->columnCount()==6)//凡是翻页的函数都要重新统计删除栏的选择与否
-        {for(int i=0;i<m_pageCount;i++){
+        {for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
         if(check[i]->isChecked()){
-            chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+          //  chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+            ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
         }
         else{
-             chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+            // chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+               ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
         }
             }}
     setListWidget(1);
 }
 void MainWindow::change_to_tail(){//跳到尾页函数
     if(ui->tableWidget->columnCount()==6)//凡是翻页的函数都要重新统计删除栏的选择与否
-        {for(int i=0;i<m_pageCount;i++){
+        {for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
         if(check[i]->isChecked()){
-            chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+           // chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+              ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
         }
         else{
-             chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+            // chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+               ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
         }
             }}
     setListWidget(m_countPageNum);
@@ -377,12 +444,14 @@ void MainWindow::change_to_page(){//跳到任意页的函数
      }
      else{
          if(ui->tableWidget->columnCount()==6)//凡是翻页的函数都要重新统计删除栏的选择与否
-             {for(int i=0;i<m_pageCount;i++){
+             {for(int i=0;i<min(m_pageCount,ls.length-(m_currentPageNum-1)*m_pageCount);i++){
              if(check[i]->isChecked()){
-                 chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+               //  chosen[i+(m_currentPageNum-1)*m_pageCount]=true;
+                  ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=true;
              }
              else{
-                  chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+                 // chosen[i+(m_currentPageNum-1)*m_pageCount]=false;
+                     ls.base[i+(m_currentPageNum-1)*m_pageCount]->selected=false;
              }
                  }}
          setListWidget(ui->Page_info->text().toInt());//调转
