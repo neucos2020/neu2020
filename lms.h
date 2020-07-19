@@ -3,14 +3,17 @@
 class lms
 {private:
     typedef struct {
-        int LinkId;
+        /*int LinkId;
         int flag;
         int brunch;
-        int disclass;
+        int disclass;*/
+        int*data;//依次填入LinkId,flag,brunch,disclass
         char* roadname;
+        bool selected;//判断是否被选中：单独搞一个数组很麻烦
 
     }LandMark,*LM;
 public:
+
     lms();
     ~lms();
     void print();
@@ -25,7 +28,6 @@ public:
     int length;
     int origin_length;//存放base的内存长度;
     LM* base;
-    int cmp(LM p,LM q,int info);//按照LinkId比较
 };
 
 #endif // LMS_H
