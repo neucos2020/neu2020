@@ -1,0 +1,12 @@
+INPUT(
+./debug\main.o
+./debug\mainwindow.o
+./debug\lms.o
+./debug\aequilatetabbar.o
+./debug\ctabwidget.o
+./debug\mytreewid.o
+./debug\moc_mainwindow.o
+./debug\moc_aequilatetabbar.o
+./debug\moc_ctabwidget.o
+./debug\moc_mytreewid.o
+);

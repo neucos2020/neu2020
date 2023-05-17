@@ -1,0 +1,12 @@
+INPUT(
+./release\main.o
+./release\mainwindow.o
+./release\lms.o
+./release\aequilatetabbar.o
+./release\ctabwidget.o
+./release\mytreewid.o
+./release\moc_mainwindow.o
+./release\moc_aequilatetabbar.o
+./release\moc_ctabwidget.o
+./release\moc_mytreewid.o
+);
